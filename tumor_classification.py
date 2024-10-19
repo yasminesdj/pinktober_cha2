@@ -1,8 +1,10 @@
 import pandas as pd
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.preprocessing.image import load_img, img_to_array, ImageDataGenerator
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
+from tensorflow.keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.regularizers import l2
 import numpy as np
 import os
 
@@ -10,7 +12,6 @@ import os
 train_data = pd.read_csv('train_data.csv')
 test_data = pd.read_csv('test_data.csv')
 sample_submissions = pd.read_csv('sample_submissions.csv')
-
 print(train_data.head())
 print(test_data.head())
 print(sample_submissions.head())
@@ -49,18 +50,32 @@ def preprocess_test_images(df, img_dir):
 train_images = preprocess_train_images(train_data, 'data/train')
 test_images = preprocess_test_images(test_data, 'data/test')
 
+# Data Augmentation
+datagen = ImageDataGenerator(
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
+datagen.fit(train_images)
+
 # Step 3: Encode Labels
 label_encoder = LabelEncoder()
 train_labels = label_encoder.fit_transform(train_data['label'])
 
 # Step 4: Build the Model
 model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(224, 224, 3)),
+    Conv2D(32, (3, 3), activation='relu', input_shape=(224, 224, 3), kernel_regularizer=l2(0.001)),
+    BatchNormalization(),
     MaxPooling2D(pool_size=(2, 2)),
-    Conv2D(64, (3, 3), activation='relu'),
+    Conv2D(64, (3, 3), activation='relu', kernel_regularizer=l2(0.001)),
+    BatchNormalization(),
     MaxPooling2D(pool_size=(2, 2)),
     Flatten(),
-    Dense(128, activation='relu'),
+    Dense(128, activation='relu', kernel_regularizer=l2(0.001)),
     Dropout(0.5),
     Dense(1, activation='sigmoid')
 ])
@@ -68,7 +83,8 @@ model = Sequential([
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # Step 5: Train the Model
-model.fit(train_images, train_labels, epochs=10)  # Removed validation_split
+lr_reduce = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, min_lr=0.0001)
+model.fit(datagen.flow(train_images, train_labels, batch_size=32), epochs=10, callbacks=[lr_reduce])
 
 # Step 6: Make Predictions
 predictions = model.predict(test_images)
@@ -82,3 +98,5 @@ submission = pd.DataFrame({
 submission.to_csv('final_submission.csv', index=False)
 
 
+ 
+   
