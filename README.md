@@ -1,4 +1,4 @@
-Tumor Classification Model :
+Tumor detection Model :
 
 This project aims to classify breast tumor images as either malignant or benign using a Convolutional Neural Network (CNN) built with TensorFlow and Keras. The dataset contains mammogram images of tumors, with labels indicating whether the tumor is benign (0) or malignant (1).
 
