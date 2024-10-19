@@ -7,9 +7,9 @@ import numpy as np
 import os
 
 # Step 1: Load and Inspect the Data
-train_data = pd.read_csv('C:/Users/zbook/Desktop/tumor_detection/train_data.csv')
-test_data = pd.read_csv('C:/Users/zbook/Desktop/tumor_detection/test_data.csv')
-sample_submissions = pd.read_csv('C:/Users/zbook/Desktop/tumor_detection/sample_submissions.csv')
+train_data = pd.read_csv('train_data.csv')
+test_data = pd.read_csv('test_data.csv')
+sample_submissions = pd.read_csv('sample_submissions.csv')
 
 print(train_data.head())
 print(test_data.head())
@@ -46,8 +46,8 @@ def preprocess_test_images(df, img_dir):
     return np.array(images)
 
 # Preprocess images in the train and test folders
-train_images = preprocess_train_images(train_data, 'C:/Users/zbook/Desktop/tumor_detection/data/train')
-test_images = preprocess_test_images(test_data, 'C:/Users/zbook/Desktop/tumor_detection/data/test')
+train_images = preprocess_train_images(train_data, 'data/train')
+test_images = preprocess_test_images(test_data, 'data/test')
 
 # Step 3: Encode Labels
 label_encoder = LabelEncoder()
@@ -68,7 +68,7 @@ model = Sequential([
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # Step 5: Train the Model
-model.fit(train_images, train_labels, epochs=10, validation_split=0.2)
+model.fit(train_images, train_labels, epochs=10)  # Removed validation_split
 
 # Step 6: Make Predictions
 predictions = model.predict(test_images)
@@ -79,4 +79,6 @@ submission = pd.DataFrame({
     'file_name': test_data['file_name'],
     'label': predicted_labels.flatten()
 })
-submission.to_csv('C:/Users/zbook/Desktop/tumor_detection/final_submission.csv', index=False)
+submission.to_csv('final_submission.csv', index=False)
+
+
